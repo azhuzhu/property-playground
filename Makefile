@@ -11,7 +11,7 @@ CONTAINER_BUILD_FLAGS := --format docker
 COMPOSE_BUILD_ENV := BUILDAH_FORMAT=docker
 endif
 
-.PHONY: contracts contracts-check csv-to-json install train run test lint portal-install portal-build java-test container-build container-run stack-build stack-up stack-down
+.PHONY: contracts contracts-check csv-to-json install train run test lint portal-install portal-build java-test container-build container-run stack-build stack-up stack-urls stack-down
 
 contracts:
 	CONTAINER_CLIENT=$(CONTAINER_CLIENT) OPENAPI_GENERATOR_IMAGE=$(OPENAPI_GENERATOR_IMAGE) python3 scripts/generate_contracts.py
@@ -59,6 +59,13 @@ stack-build:
 
 stack-up:
 	$(strip $(COMPOSE_BUILD_ENV) $(CONTAINER_CLIENT) compose up --detach --build)
+	@$(MAKE) --no-print-directory stack-urls
+
+stack-urls:
+	@echo "Portal:                 http://localhost:3000"
+	@echo "Model API Swagger:      http://localhost:8002/docs"
+	@echo "Estimator API Swagger:  http://localhost:8001/docs"
+	@echo "Market API health:      http://localhost:8080/actuator/health"
 
 stack-down:
 	$(CONTAINER_CLIENT) compose down

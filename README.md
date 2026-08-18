@@ -99,6 +99,9 @@ Start all four services with the selected Compose client:
 make stack-up
 ```
 
+After the stack starts, the command prints the portal, Swagger, and health-check URLs. Run
+`make stack-urls` at any time to display them again.
+
 Then open:
 
 - Portal: <http://localhost:3000>
