@@ -39,6 +39,12 @@ function validate(values: PropertyInput) {
   return errors;
 }
 
+function createEstimateId() {
+  const timestamp = Date.now().toString(36);
+  const random = Math.random().toString(36).slice(2, 10);
+  return `${timestamp}-${random}`;
+}
+
 export function EstimatorClient() {
   const [values, setValues] = useState<PropertyInput>(initialValues);
   const [errors, setErrors] = useState<Partial<Record<keyof PropertyInput, string>>>({});
@@ -63,7 +69,12 @@ export function EstimatorClient() {
       const body = (await response.json()) as EstimateResponse & { detail?: string };
       if (!response.ok) throw new Error(body.detail ?? "The estimate could not be completed");
       setResult(body.prediction);
-      addEstimate({ ...values, id: crypto.randomUUID(), prediction: body.prediction, createdAt: new Date().toISOString() });
+      addEstimate({
+        ...values,
+        id: createEstimateId(),
+        prediction: body.prediction,
+        createdAt: new Date().toISOString(),
+      });
     } catch (error) {
       setRequestError(error instanceof Error ? error.message : "The estimate could not be completed");
     } finally {

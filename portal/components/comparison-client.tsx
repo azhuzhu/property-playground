@@ -29,6 +29,11 @@ const metrics: ComparisonMetric[] = [
     format: (item) => `${number.format(item.square_footage)} sq ft`,
   },
   {
+    label: "Lot size",
+    value: (item) => item.lot_size,
+    format: (item) => `${number.format(item.lot_size)} sq ft`,
+  },
+  {
     label: "Bedrooms",
     value: (item) => item.bedrooms,
     format: (item) => number.format(item.bedrooms),
