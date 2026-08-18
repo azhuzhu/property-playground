@@ -105,6 +105,39 @@ function formatAxisTick(key: ChartAxisKey, value: number) {
   return value.toFixed(1).replace(/\.0$/, "");
 }
 
+function AveragePriceBars({
+  title,
+  description,
+  segments,
+  suffix,
+}: {
+  title: string;
+  description: string;
+  segments: Array<{ value: number; averagePrice: number }>;
+  suffix: string;
+}) {
+  const maximumPrice = Math.max(...segments.map((segment) => segment.averagePrice), 1);
+
+  return <div className="card p-5 sm:p-6">
+    <div className="flex items-center justify-between gap-3">
+      <div>
+        <h2 className="text-lg font-extrabold">{title}</h2>
+        <p className="mt-1 text-xs text-slate-500">{description}</p>
+      </div>
+      <BarChart3 className="shrink-0 text-emerald-600" />
+    </div>
+    {segments.length ? <div className="mt-8 space-y-5">
+      {segments.map((segment) => <div key={segment.value} className="grid grid-cols-[70px_1fr_90px] items-center gap-3">
+        <span className="text-xs font-bold text-slate-600">{number.format(segment.value)} {suffix}</span>
+        <div className="h-9 overflow-hidden rounded-lg bg-slate-100">
+          <div className="h-full rounded-lg bg-emerald-400 transition-all duration-700" style={{ width: `${(segment.averagePrice / maximumPrice) * 100}%` }} />
+        </div>
+        <span className="text-right text-xs font-extrabold">{currency.format(segment.averagePrice)}</span>
+      </div>)}
+    </div> : <p className="mt-8 rounded-xl border border-dashed border-slate-200 py-10 text-center text-xs font-semibold text-slate-400">No matching properties</p>}
+  </div>;
+}
+
 const emptyFilters: FilterState = {
   id: "",
   bedrooms: "",
@@ -201,7 +234,19 @@ export function MarketDashboard({ initialSummary, initialProperties, connected }
   const [error, setError] = useState("");
 
   const sortedProperties = useMemo(() => [...properties].sort((a, b) => (a[sort] - b[sort]) * (descending ? -1 : 1)), [properties, sort, descending]);
-  const maxSegmentPrice = Math.max(...summary.segments.map((item) => item.averagePrice), 1);
+  const bathroomSegments = useMemo(() => {
+    const grouped = new Map<number, { total: number; count: number }>();
+    properties.forEach((property) => {
+      const current = grouped.get(property.bathrooms) ?? { total: 0, count: 0 };
+      grouped.set(property.bathrooms, {
+        total: current.total + property.price,
+        count: current.count + 1,
+      });
+    });
+    return [...grouped.entries()]
+      .sort(([left], [right]) => left - right)
+      .map(([value, group]) => ({ value, averagePrice: group.total / group.count }));
+  }, [properties]);
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
   const exportQuery = appliedQuery ? `?${appliedQuery}` : "";
   const selectedChartAxis = chartAxes.find((axis) => axis.key === chartAxis) ?? chartAxes[0];
@@ -325,15 +370,22 @@ export function MarketDashboard({ initialSummary, initialProperties, connected }
         {stats.map(([label, value, detail]) => <article key={label} className="card p-5"><p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">{label}</p><p className="mt-3 text-2xl font-black tracking-[-0.035em] text-slate-950">{value}</p><p className="mt-1 text-[11px] text-slate-400">{detail}</p></article>)}
       </section>
 
-      <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,.65fr)]">
-        <div className="card p-5 sm:p-6">
-          <div className="flex items-center justify-between"><div><h2 className="text-lg font-extrabold">Average price by bedrooms</h2><p className="mt-1 text-xs text-slate-500">Segment comparison from the housing dataset</p></div><BarChart3 className="text-emerald-600" /></div>
-          <div className="mt-8 space-y-5">
-            {summary.segments.map((segment) => <div key={segment.bedrooms} className="grid grid-cols-[70px_1fr_90px] items-center gap-3"><span className="text-xs font-bold text-slate-600">{segment.bedrooms} beds</span><div className="h-9 overflow-hidden rounded-lg bg-slate-100"><div className="h-full rounded-lg bg-emerald-400 transition-all duration-700" style={{ width: `${(segment.averagePrice / maxSegmentPrice) * 100}%` }} /></div><span className="text-right text-xs font-extrabold">{currency.format(segment.averagePrice)}</span></div>)}
-          </div>
-        </div>
+      <section className="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(340px,.8fr)]">
+        <AveragePriceBars
+          title="Average price by bedrooms"
+          description="Bedroom segments in the filtered market"
+          segments={summary.segments.map((segment) => ({ value: segment.bedrooms, averagePrice: segment.averagePrice }))}
+          suffix="beds"
+        />
 
-        <div className="rounded-2xl bg-slate-950 p-5 text-white sm:p-6">
+        <AveragePriceBars
+          title="Average price by bathrooms"
+          description="Bathroom segments in the filtered market"
+          segments={bathroomSegments}
+          suffix="baths"
+        />
+
+        <div className="rounded-2xl bg-slate-950 p-5 text-white md:col-span-2 sm:p-6 xl:col-span-1">
           <div className="flex items-center gap-2"><WandSparkles size={18} className="text-amber-300" /><h2 className="text-lg font-extrabold">What-if analysis</h2></div>
           <p className="mt-2 text-xs leading-5 text-slate-400">Adjust the strongest market signals and query the shared ML model.</p>
           <div className="mt-5 space-y-4">
