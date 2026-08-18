@@ -69,23 +69,7 @@ export interface ModelInfo {
      * @memberof ModelInfo
      */
     training_source: string;
-    /**
-     *
-     * @type {string}
-     * @memberof ModelInfo
-     */
-    currency: ModelInfoCurrencyEnum;
 }
-
-
-/**
- * @export
- */
-export const ModelInfoCurrencyEnum = {
-    Usd: 'USD'
-} as const;
-export type ModelInfoCurrencyEnum = typeof ModelInfoCurrencyEnum[keyof typeof ModelInfoCurrencyEnum];
-
 
 /**
  * Check if a given object implements the ModelInfo interface.
@@ -98,7 +82,6 @@ export function instanceOfModelInfo(value: object): value is ModelInfo {
     if (!('intercept' in value) || value['intercept'] === undefined) return false;
     if (!('metrics' in value) || value['metrics'] === undefined) return false;
     if (!('training_source' in value) || value['training_source'] === undefined) return false;
-    if (!('currency' in value) || value['currency'] === undefined) return false;
     return true;
 }
 
@@ -119,7 +102,6 @@ export function ModelInfoFromJSONTyped(json: any, ignoreDiscriminator: boolean):
         'intercept': json['intercept'],
         'metrics': ModelMetricsFromJSON(json['metrics']),
         'training_source': json['training_source'],
-        'currency': json['currency'],
     };
 }
 
@@ -141,6 +123,5 @@ export function ModelInfoToJSONTyped(value?: ModelInfo | null, ignoreDiscriminat
         'intercept': value['intercept'],
         'metrics': ModelMetricsToJSON(value['metrics']),
         'training_source': value['training_source'],
-        'currency': value['currency'],
     };
 }

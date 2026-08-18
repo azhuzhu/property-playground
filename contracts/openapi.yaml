@@ -215,7 +215,6 @@ components:
         - intercept
         - metrics
         - training_source
-        - currency
       properties:
         model_type:
           type: string
@@ -237,11 +236,6 @@ components:
           $ref: "#/components/schemas/ModelMetrics"
         training_source:
           type: string
-        currency:
-          type: string
-          enum:
-            - USD
-          default: USD
     HealthResponse:
       type: object
       additionalProperties: false

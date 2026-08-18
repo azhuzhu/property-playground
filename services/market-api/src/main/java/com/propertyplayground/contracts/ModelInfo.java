@@ -4,7 +4,6 @@ import java.net.URI;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.propertyplayground.contracts.ModelMetrics;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,41 +43,6 @@ public class ModelInfo {
 
   private String trainingSource;
 
-  /**
-   * Gets or Sets currency
-   */
-  public enum CurrencyEnum {
-    USD("USD");
-
-    private final String value;
-
-    CurrencyEnum(String value) {
-      this.value = value;
-    }
-
-    @JsonValue
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    @JsonCreator
-    public static CurrencyEnum fromValue(String value) {
-      for (CurrencyEnum b : CurrencyEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
-  }
-
-  private CurrencyEnum currency = CurrencyEnum.USD;
-
   public ModelInfo() {
     super();
   }
@@ -86,7 +50,7 @@ public class ModelInfo {
   /**
    * Constructor with only required parameters
    */
-  public ModelInfo(String modelType, String modelVersion, List<String> featureNames, Map<String, Double> coefficients, Double intercept, ModelMetrics metrics, String trainingSource, CurrencyEnum currency) {
+  public ModelInfo(String modelType, String modelVersion, List<String> featureNames, Map<String, Double> coefficients, Double intercept, ModelMetrics metrics, String trainingSource) {
     this.modelType = modelType;
     this.modelVersion = modelVersion;
     this.featureNames = featureNames;
@@ -94,7 +58,6 @@ public class ModelInfo {
     this.intercept = intercept;
     this.metrics = metrics;
     this.trainingSource = trainingSource;
-    this.currency = currency;
   }
 
   public ModelInfo modelType(String modelType) {
@@ -253,26 +216,6 @@ public class ModelInfo {
     this.trainingSource = trainingSource;
   }
 
-  public ModelInfo currency(CurrencyEnum currency) {
-    this.currency = currency;
-    return this;
-  }
-
-  /**
-   * Get currency
-   * @return currency
-   */
-  @NotNull
-  @Schema(name = "currency", requiredMode = Schema.RequiredMode.REQUIRED)
-  @JsonProperty("currency")
-  public CurrencyEnum getCurrency() {
-    return currency;
-  }
-
-  public void setCurrency(CurrencyEnum currency) {
-    this.currency = currency;
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -288,13 +231,12 @@ public class ModelInfo {
         Objects.equals(this.coefficients, modelInfo.coefficients) &&
         Objects.equals(this.intercept, modelInfo.intercept) &&
         Objects.equals(this.metrics, modelInfo.metrics) &&
-        Objects.equals(this.trainingSource, modelInfo.trainingSource) &&
-        Objects.equals(this.currency, modelInfo.currency);
+        Objects.equals(this.trainingSource, modelInfo.trainingSource);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(modelType, modelVersion, featureNames, coefficients, intercept, metrics, trainingSource, currency);
+    return Objects.hash(modelType, modelVersion, featureNames, coefficients, intercept, metrics, trainingSource);
   }
 
   @Override
@@ -308,7 +250,6 @@ public class ModelInfo {
     sb.append("    intercept: ").append(toIndentedString(intercept)).append("\n");
     sb.append("    metrics: ").append(toIndentedString(metrics)).append("\n");
     sb.append("    trainingSource: ").append(toIndentedString(trainingSource)).append("\n");
-    sb.append("    currency: ").append(toIndentedString(currency)).append("\n");
     sb.append("}");
     return sb.toString();
   }

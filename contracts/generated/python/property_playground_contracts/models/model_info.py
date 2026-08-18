@@ -17,7 +17,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictFloat, StrictInt, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, StrictFloat, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Union
 from property_playground_contracts.models.model_metrics import ModelMetrics
 from typing import Optional, Set
@@ -34,15 +34,7 @@ class ModelInfo(BaseModel):
     intercept: Union[StrictFloat, StrictInt]
     metrics: ModelMetrics
     training_source: StrictStr
-    currency: StrictStr
-    __properties: ClassVar[List[str]] = ["model_type", "model_version", "feature_names", "coefficients", "intercept", "metrics", "training_source", "currency"]
-
-    @field_validator('currency')
-    def currency_validate_enum(cls, value):
-        """Validates the enum"""
-        if value not in set(['USD']):
-            raise ValueError("must be one of enum values ('USD')")
-        return value
+    __properties: ClassVar[List[str]] = ["model_type", "model_version", "feature_names", "coefficients", "intercept", "metrics", "training_source"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -104,7 +96,6 @@ class ModelInfo(BaseModel):
             "coefficients": obj.get("coefficients"),
             "intercept": obj.get("intercept"),
             "metrics": ModelMetrics.from_dict(obj["metrics"]) if obj.get("metrics") is not None else None,
-            "training_source": obj.get("training_source"),
-            "currency": obj.get("currency") if obj.get("currency") is not None else 'USD'
+            "training_source": obj.get("training_source")
         })
         return _obj

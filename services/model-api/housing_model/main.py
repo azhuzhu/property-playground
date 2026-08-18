@@ -123,7 +123,6 @@ def model_info(request: Request) -> ModelInfo:
         intercept=float(model.intercept_),
         metrics=artifact["metrics"],
         training_source=artifact["training_source"],
-        currency="USD",
     )
 
 

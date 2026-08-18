@@ -66,6 +66,6 @@ def test_model_info() -> None:
     body = response.json()
     assert response.status_code == 200
     assert body["model_type"] == "LinearRegression"
-    assert body["currency"] == "USD"
+    assert "currency" not in body
     assert set(body["coefficients"]) == set(SAMPLE)
     assert {"r2", "mae", "rmse"} <= set(body["metrics"])
