@@ -10,9 +10,10 @@ import {
   LoaderCircle,
   RotateCcw,
   SlidersHorizontal,
+  Table2,
   WandSparkles,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { type KeyboardEvent, useMemo, useState } from "react";
 import { currency, number } from "@/lib/format";
 import type { MarketSummary, Property, PropertyInput } from "@/lib/types";
 import type { PredictionResponse } from "@/lib/generated/openapi/models/PredictionResponse";
@@ -45,6 +46,8 @@ type FilterState = {
   maxDistance: string;
 };
 type FilterKey = keyof FilterState;
+type RecordsView = "table" | "chart";
+type ChartAxisKey = Exclude<SortKey, "price">;
 
 const scenarioDefaults: PropertyInput = { square_footage: 1700, bedrooms: 3, bathrooms: 2, year_built: 2000, lot_size: 7200, distance_to_city_center: 5, school_rating: 8 };
 
@@ -78,6 +81,29 @@ const propertyColumns: Array<{
     format: (property) => `${property.distance_to_city_center} mi`,
   },
 ];
+
+const chartAxes: Array<{ key: ChartAxisKey; label: string }> = [
+  { key: "square_footage", label: "Living area (ft²)" },
+  { key: "lot_size", label: "Lot size (ft²)" },
+  { key: "bedrooms", label: "Bedrooms" },
+  { key: "bathrooms", label: "Bathrooms" },
+  { key: "year_built", label: "Year built" },
+  { key: "school_rating", label: "School rating" },
+  { key: "distance_to_city_center", label: "Distance to centre (mi)" },
+];
+
+const compactCurrency = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  notation: "compact",
+  maximumFractionDigits: 0,
+});
+
+function formatAxisTick(key: ChartAxisKey, value: number) {
+  if (key === "year_built" || key === "bedrooms") return Math.round(value).toString();
+  if (key === "square_footage" || key === "lot_size") return number.format(Math.round(value));
+  return value.toFixed(1).replace(/\.0$/, "");
+}
 
 const emptyFilters: FilterState = {
   id: "",
@@ -166,6 +192,8 @@ export function MarketDashboard({ initialSummary, initialProperties, connected }
   const [appliedQuery, setAppliedQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("price");
   const [descending, setDescending] = useState(true);
+  const [recordsView, setRecordsView] = useState<RecordsView>("table");
+  const [chartAxis, setChartAxis] = useState<ChartAxisKey>("square_footage");
   const [filtering, setFiltering] = useState(false);
   const [scenario, setScenario] = useState(scenarioDefaults);
   const [scenarioResult, setScenarioResult] = useState<number | null>(null);
@@ -176,6 +204,47 @@ export function MarketDashboard({ initialSummary, initialProperties, connected }
   const maxSegmentPrice = Math.max(...summary.segments.map((item) => item.averagePrice), 1);
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
   const exportQuery = appliedQuery ? `?${appliedQuery}` : "";
+  const selectedChartAxis = chartAxes.find((axis) => axis.key === chartAxis) ?? chartAxes[0];
+  const chartModel = useMemo(() => {
+    if (!properties.length) return null;
+    const width = 900;
+    const height = 430;
+    const margin = { top: 24, right: 28, bottom: 66, left: 88 };
+    const plotWidth = width - margin.left - margin.right;
+    const plotHeight = height - margin.top - margin.bottom;
+    const xValues = properties.map((property) => property[chartAxis]);
+    const prices = properties.map((property) => property.price);
+    const domain = (values: number[]) => {
+      const minimum = Math.min(...values);
+      const maximum = Math.max(...values);
+      const padding = minimum === maximum
+        ? Math.max(Math.abs(minimum) * 0.05, 1)
+        : (maximum - minimum) * 0.06;
+      return [minimum - padding, maximum + padding] as const;
+    };
+    const [xMinimum, xMaximum] = domain(xValues);
+    const [priceMinimum, priceMaximum] = domain(prices);
+    const scaleX = (value: number) => margin.left + ((value - xMinimum) / (xMaximum - xMinimum)) * plotWidth;
+    const scaleY = (value: number) => margin.top + plotHeight - ((value - priceMinimum) / (priceMaximum - priceMinimum)) * plotHeight;
+    const tickValues = (minimum: number, maximum: number) => Array.from(
+      { length: 6 },
+      (_, index) => minimum + ((maximum - minimum) * index) / 5,
+    );
+    const averagePrice = prices.reduce((total, price) => total + price, 0) / prices.length;
+
+    return {
+      width,
+      height,
+      margin,
+      plotWidth,
+      plotHeight,
+      xTicks: tickValues(xMinimum, xMaximum),
+      priceTicks: tickValues(priceMinimum, priceMaximum),
+      averagePrice,
+      scaleX,
+      scaleY,
+    };
+  }, [chartAxis, properties]);
 
   async function loadFilteredMarket(nextFilters: FilterState) {
     const params = new URLSearchParams();
@@ -227,6 +296,18 @@ export function MarketDashboard({ initialSummary, initialProperties, connected }
 
   function changeSort(key: SortKey) {
     if (key === sort) setDescending((value) => !value); else { setSort(key); setDescending(true); }
+  }
+
+  function changeRecordsTabFromKeyboard(event: KeyboardEvent<HTMLButtonElement>, currentView: RecordsView) {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const nextView = event.key === "ArrowLeft" || event.key === "Home"
+      ? "table"
+      : event.key === "ArrowRight" || event.key === "End"
+        ? "chart"
+        : currentView;
+    setRecordsView(nextView);
+    document.getElementById(`${nextView}-tab`)?.focus();
   }
 
   const stats = [
@@ -320,7 +401,35 @@ export function MarketDashboard({ initialSummary, initialProperties, connected }
             </button>
           </div>
         </form>
-        <div className="overflow-x-auto">
+        <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 pt-3 sm:px-6" role="tablist" aria-label="Property data views">
+          <div className="flex gap-1">
+            {([[
+              "table", "Records table", Table2,
+            ], ["chart", "Price chart", BarChart3]] as const).map(([view, label, Icon]) => (
+              <button
+                key={view}
+                id={`${view}-tab`}
+                type="button"
+                role="tab"
+                aria-selected={recordsView === view}
+                aria-controls={`${view}-panel`}
+                tabIndex={recordsView === view ? 0 : -1}
+                className={`flex items-center gap-2 border-b-2 px-3 py-3 text-sm font-bold transition ${
+                  recordsView === view
+                    ? "border-emerald-600 text-emerald-800"
+                    : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800"
+                }`}
+                onClick={() => setRecordsView(view)}
+                onKeyDown={(event) => changeRecordsTabFromKeyboard(event, view)}
+              >
+                <Icon size={16} aria-hidden="true" /> {label}
+              </button>
+            ))}
+          </div>
+          <span className="hidden text-xs font-semibold text-slate-400 sm:block">{properties.length} properties</span>
+        </div>
+
+        {recordsView === "table" && <div id="table-panel" role="tabpanel" aria-labelledby="table-tab" className="overflow-x-auto">
           <table className="w-full min-w-[1120px] text-left text-sm">
             <thead className="bg-white text-[11px] uppercase tracking-[0.1em] text-slate-500">
               <tr>
@@ -370,7 +479,102 @@ export function MarketDashboard({ initialSummary, initialProperties, connected }
             </tbody>
           </table>
           {sortedProperties.length === 0 && <p className="py-12 text-center text-sm text-slate-500">No properties match these filters.</p>}
-        </div>
+        </div>}
+
+        {recordsView === "chart" && <div id="chart-panel" role="tabpanel" aria-labelledby="chart-tab" className="p-4 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h3 className="text-base font-extrabold text-slate-900">Price relationship</h3>
+              <p className="mt-1 text-xs text-slate-500">Each point is one property from the currently filtered records.</p>
+            </div>
+            <label className="w-full sm:w-64">
+              <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.08em] text-slate-600">X-axis field</span>
+              <select className="field-input py-2.5" value={chartAxis} onChange={(event) => setChartAxis(event.target.value as ChartAxisKey)}>
+                {chartAxes.map((axis) => <option key={axis.key} value={axis.key}>{axis.label}</option>)}
+              </select>
+            </label>
+          </div>
+
+          {chartModel ? <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50/70 p-2 sm:p-4">
+            <div className="overflow-x-auto">
+              <svg
+                viewBox={`0 0 ${chartModel.width} ${chartModel.height}`}
+                className="min-w-[680px]"
+                role="img"
+                aria-labelledby="price-chart-title price-chart-description"
+              >
+                <title id="price-chart-title">Price by {selectedChartAxis.label}</title>
+                <desc id="price-chart-description">Scatter chart of {properties.length} filtered properties. Price is on the vertical axis and {selectedChartAxis.label} is on the horizontal axis.</desc>
+                <rect
+                  x={chartModel.margin.left}
+                  y={chartModel.margin.top}
+                  width={chartModel.plotWidth}
+                  height={chartModel.plotHeight}
+                  rx="10"
+                  fill="white"
+                />
+                {chartModel.priceTicks.map((tick) => {
+                  const y = chartModel.scaleY(tick);
+                  return <g key={`price-${tick}`}>
+                    <line x1={chartModel.margin.left} x2={chartModel.width - chartModel.margin.right} y1={y} y2={y} stroke="#e2e8f0" strokeDasharray="4 5" />
+                    <text x={chartModel.margin.left - 12} y={y + 4} textAnchor="end" fontSize="11" fill="#64748b">{compactCurrency.format(tick)}</text>
+                  </g>;
+                })}
+                {chartModel.xTicks.map((tick) => {
+                  const x = chartModel.scaleX(tick);
+                  return <g key={`axis-${tick}`}>
+                    <line x1={x} x2={x} y1={chartModel.margin.top} y2={chartModel.height - chartModel.margin.bottom} stroke="#f1f5f9" />
+                    <text x={x} y={chartModel.height - chartModel.margin.bottom + 24} textAnchor="middle" fontSize="11" fill="#64748b">{formatAxisTick(chartAxis, tick)}</text>
+                  </g>;
+                })}
+                <line
+                  x1={chartModel.margin.left}
+                  x2={chartModel.width - chartModel.margin.right}
+                  y1={chartModel.scaleY(chartModel.averagePrice)}
+                  y2={chartModel.scaleY(chartModel.averagePrice)}
+                  stroke="#f59e0b"
+                  strokeWidth="2"
+                  strokeDasharray="7 5"
+                />
+                <text
+                  x={chartModel.width - chartModel.margin.right - 6}
+                  y={chartModel.scaleY(chartModel.averagePrice) - 8}
+                  textAnchor="end"
+                  fontSize="11"
+                  fontWeight="700"
+                  fill="#b45309"
+                >
+                  Average {compactCurrency.format(chartModel.averagePrice)}
+                </text>
+                {properties.map((property) => (
+                  <circle
+                    key={property.id}
+                    cx={chartModel.scaleX(property[chartAxis])}
+                    cy={chartModel.scaleY(property.price)}
+                    r="6"
+                    fill="#10b981"
+                    fillOpacity="0.72"
+                    stroke="white"
+                    strokeWidth="2"
+                    className="transition hover:fill-amber-500 hover:fill-opacity-100"
+                  >
+                    <title>Property #{property.id}: {currency.format(property.price)}; {selectedChartAxis.label}: {formatAxisTick(chartAxis, property[chartAxis])}</title>
+                  </circle>
+                ))}
+                <text x={chartModel.margin.left + chartModel.plotWidth / 2} y={chartModel.height - 12} textAnchor="middle" fontSize="12" fontWeight="700" fill="#334155">{selectedChartAxis.label}</text>
+                <text transform={`translate(20 ${chartModel.margin.top + chartModel.plotHeight / 2}) rotate(-90)`} textAnchor="middle" fontSize="12" fontWeight="700" fill="#334155">Price (USD)</text>
+              </svg>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-slate-200 px-2 pt-3 text-[11px] font-semibold text-slate-500">
+              <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> Property record</span>
+              <span className="flex items-center gap-2"><span className="w-5 border-t-2 border-dashed border-amber-500" /> Average price</span>
+            </div>
+          </div> : <div className="mt-5 rounded-xl border border-dashed border-slate-300 py-16 text-center">
+            <BarChart3 className="mx-auto text-slate-300" size={30} />
+            <p className="mt-3 text-sm font-bold text-slate-600">No properties to chart</p>
+            <p className="mt-1 text-xs text-slate-400">Adjust or reset the current filters.</p>
+          </div>}
+        </div>}
       </section>
     </>
   );
