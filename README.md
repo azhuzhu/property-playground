@@ -6,7 +6,7 @@ The synthetic dataset is interpreted as a generic U.S. suburban housing market. 
 predictions use U.S. dollars (USD), areas use square feet, and distance uses miles.
 
 The cross-service API is defined contract-first in `contracts/openapi.yaml`. `make contracts` runs the
-pinned OpenAPI Generator image with Podman (or Docker via `CONTAINER_CLIENT=docker`) to produce the
+pinned OpenAPI Generator image with Docker (or Podman via `CONTAINER_CLIENT=podman`) to produce the
 Python/Pydantic, Java/Spring, and TypeScript/Fetch models consumed by each application.
 Run `make contracts` after changing that contract; `make contracts-check` verifies that the generated
 Pydantic, TypeScript, and Java bindings are current.
@@ -72,12 +72,12 @@ make container-build
 make container-run
 ```
 
-Podman is the default container client. To use Docker instead, set `CONTAINER_CLIENT=docker`:
+Docker is the default container client. To use Podman instead, set `CONTAINER_CLIENT=podman`:
 
 ```bash
-make container-build CONTAINER_CLIENT=docker
-make container-run CONTAINER_CLIENT=docker
-make stack-up CONTAINER_CLIENT=docker
+make container-build CONTAINER_CLIENT=podman
+make container-run CONTAINER_CLIENT=podman
+make stack-up CONTAINER_CLIENT=podman
 ```
 
 On macOS, start the Podman virtual machine first with `podman machine start` (run `podman machine init` once if it has not been created). Podman builds use Docker-compatible image format so health checks are retained. Images train and embed the model during the build and run as unprivileged users.

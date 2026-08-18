@@ -16,7 +16,7 @@ GENERATOR_IMAGE = os.getenv(
     "OPENAPI_GENERATOR_IMAGE",
     "docker.io/openapitools/openapi-generator-cli:v7.14.0",
 )
-CONTAINER_CLIENT = os.getenv("CONTAINER_CLIENT", "podman")
+CONTAINER_CLIENT = os.getenv("CONTAINER_CLIENT", "docker")
 
 
 @dataclass(frozen=True)

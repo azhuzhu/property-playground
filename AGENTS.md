@@ -2,7 +2,7 @@
 
 ## Project summary
 
-This repository contains two interview tasks combined as a Podman-oriented monorepo:
+This repository contains two interview tasks combined as a container-oriented monorepo:
 
 1. A housing-price regression API built with Python 3.12+, FastAPI, pandas, and scikit-learn.
 2. A unified Next.js portal containing a Python-backed property estimator and a Java-backed market-analysis application.
@@ -14,7 +14,7 @@ distance uses miles; do not present the data as belonging to a specific city.
 Cross-service API shapes are owned by the OpenAPI 3 contract in `contracts/openapi.yaml`. The pinned
 OpenAPI Generator container produces Python/Pydantic, Java/Spring, and TypeScript/Fetch models. Do not
 edit generated model files directly. Run `make contracts` after contract changes and keep
-`make contracts-check` passing. Set `CONTAINER_CLIENT=docker` to generate with Docker instead.
+`make contracts-check` passing. Set `CONTAINER_CLIENT=podman` to generate with Podman instead.
 
 Use descriptive service package names. The original generic root `app/` package was deliberately renamed and moved into `services/model-api/housing_model/`.
 
@@ -63,7 +63,7 @@ school_rating
 
 - Use `python3`, including in Make targets. Prefer `python3 -m <tool>`.
 - Run both Ruff and Pylint for Python linting. The current Pylint baseline is `10.00/10`.
-- Container targets use `CONTAINER_CLIENT`, which defaults to `podman` and can be set to `docker`. Do not hard-code an engine in new Make targets.
+- Container targets use `CONTAINER_CLIENT`, which defaults to `docker` and can be set to `podman`. Do not hard-code an engine in new Make targets.
 - Podman builds automatically use Docker image format so health checks are retained; Docker builds omit the Podman-specific flag.
 - Keep each backend self-contained under `services/`; do not recreate generic root `app/`, `scripts/`, or `tests/` directories.
 - Keep datasets under `data/`; update Python, Java, tests, and container COPY paths together if they move.
@@ -81,14 +81,14 @@ make lint             # Ruff and Pylint across both Python services
 make portal-install   # npm ci
 make portal-build     # Next.js production build
 make java-test        # Spring Boot tests when Maven/Java are installed
-make container-build  # Build Task 1 using the default Podman client
-make container-run    # Run Task 1 using the default Podman client
+make container-build  # Build Task 1 using the default Docker client
+make container-run    # Run Task 1 using the default Docker client
 make stack-build      # Build all images with the selected Compose client
 make stack-up         # Build and start the complete stack
 make stack-down       # Stop and remove Compose resources
 ```
 
-Use Docker for any container or Compose target by appending `CONTAINER_CLIENT=docker`, for example `make stack-up CONTAINER_CLIENT=docker`.
+Use Podman for any container or Compose target by appending `CONTAINER_CLIENT=podman`, for example `make stack-up CONTAINER_CLIENT=podman`.
 
 Run estimator API tests separately from its service directory:
 

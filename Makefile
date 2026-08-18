@@ -1,4 +1,4 @@
-CONTAINER_CLIENT ?= podman
+CONTAINER_CLIENT ?= docker
 OPENAPI_GENERATOR_IMAGE ?= docker.io/openapitools/openapi-generator-cli:v7.14.0
 CSV2JSON_VERSION ?= 2.0.2
 CSV_INPUT ?= data/House Price Dataset.csv
