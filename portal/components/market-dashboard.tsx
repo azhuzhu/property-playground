@@ -1,6 +1,17 @@
 "use client";
 
-import { ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpDown, BarChart3, FileText, LoaderCircle, SlidersHorizontal, WandSparkles } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowDownToLine,
+  ArrowUp,
+  ArrowUpDown,
+  BarChart3,
+  FileText,
+  LoaderCircle,
+  RotateCcw,
+  SlidersHorizontal,
+  WandSparkles,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { currency, number } from "@/lib/format";
 import type { MarketSummary, Property, PropertyInput } from "@/lib/types";
@@ -16,6 +27,24 @@ type SortKey =
   | "year_built"
   | "school_rating"
   | "distance_to_city_center";
+type FilterState = {
+  id: string;
+  bedrooms: string;
+  bathrooms: string;
+  minPrice: string;
+  maxPrice: string;
+  minSquareFootage: string;
+  maxSquareFootage: string;
+  minLotSize: string;
+  maxLotSize: string;
+  minYearBuilt: string;
+  maxYearBuilt: string;
+  minSchoolRating: string;
+  maxSchoolRating: string;
+  minDistance: string;
+  maxDistance: string;
+};
+type FilterKey = keyof FilterState;
 
 const scenarioDefaults: PropertyInput = { square_footage: 1700, bedrooms: 3, bathrooms: 2, year_built: 2000, lot_size: 7200, distance_to_city_center: 5, school_rating: 8 };
 
@@ -50,11 +79,91 @@ const propertyColumns: Array<{
   },
 ];
 
+const emptyFilters: FilterState = {
+  id: "",
+  bedrooms: "",
+  bathrooms: "",
+  minPrice: "",
+  maxPrice: "",
+  minSquareFootage: "",
+  maxSquareFootage: "",
+  minLotSize: "",
+  maxLotSize: "",
+  minYearBuilt: "",
+  maxYearBuilt: "",
+  minSchoolRating: "",
+  maxSchoolRating: "",
+  minDistance: "",
+  maxDistance: "",
+};
+
+const filterGroups: Array<{
+  title: string;
+  description: string;
+  fields: Array<{
+    key: FilterKey;
+    label: string;
+    placeholder: string;
+    min?: number;
+    max?: number;
+    step?: number;
+  }>;
+}> = [
+  {
+    title: "Value & identity",
+    description: "Locate a record or narrow its asking price.",
+    fields: [
+      { key: "id", label: "Property ID", placeholder: "Any ID", min: 1, step: 1 },
+      { key: "minPrice", label: "Minimum price", placeholder: "$ min", min: 0, step: 10000 },
+      { key: "maxPrice", label: "Maximum price", placeholder: "$ max", min: 0, step: 10000 },
+    ],
+  },
+  {
+    title: "Space",
+    description: "Set ranges for indoor and outdoor area.",
+    fields: [
+      { key: "minSquareFootage", label: "Min living area", placeholder: "ft² min", min: 0, step: 50 },
+      { key: "maxSquareFootage", label: "Max living area", placeholder: "ft² max", min: 0, step: 50 },
+      { key: "minLotSize", label: "Min lot size", placeholder: "ft² min", min: 0, step: 100 },
+      { key: "maxLotSize", label: "Max lot size", placeholder: "ft² max", min: 0, step: 100 },
+    ],
+  },
+  {
+    title: "Property details",
+    description: "Filter configuration and construction year.",
+    fields: [
+      { key: "bedrooms", label: "Bedrooms", placeholder: "Any", min: 0, step: 1 },
+      { key: "bathrooms", label: "Bathrooms", placeholder: "Any", min: 0, step: 0.5 },
+      { key: "minYearBuilt", label: "Built from", placeholder: "Year min", min: 1800, max: 2100, step: 1 },
+      { key: "maxYearBuilt", label: "Built to", placeholder: "Year max", min: 1800, max: 2100, step: 1 },
+    ],
+  },
+  {
+    title: "Location & quality",
+    description: "Refine school rating and distance to centre.",
+    fields: [
+      { key: "minSchoolRating", label: "Min school rating", placeholder: "0–10", min: 0, max: 10, step: 0.1 },
+      { key: "maxSchoolRating", label: "Max school rating", placeholder: "0–10", min: 0, max: 10, step: 0.1 },
+      { key: "minDistance", label: "Min distance", placeholder: "mi min", min: 0, step: 0.1 },
+      { key: "maxDistance", label: "Max distance", placeholder: "mi max", min: 0, step: 0.1 },
+    ],
+  },
+];
+
+const rangePairs: Array<[FilterKey, FilterKey, string]> = [
+  ["minPrice", "maxPrice", "price"],
+  ["minSquareFootage", "maxSquareFootage", "living area"],
+  ["minLotSize", "maxLotSize", "lot size"],
+  ["minYearBuilt", "maxYearBuilt", "year built"],
+  ["minSchoolRating", "maxSchoolRating", "school rating"],
+  ["minDistance", "maxDistance", "distance"],
+];
+
 export function MarketDashboard({ initialSummary, initialProperties, connected }: Props) {
   const [properties, setProperties] = useState(initialProperties);
   const [summary, setSummary] = useState(initialSummary);
-  const [bedrooms, setBedrooms] = useState("all");
-  const [minimumPrice, setMinimumPrice] = useState("");
+  const [filters, setFilters] = useState<FilterState>(emptyFilters);
+  const [appliedQuery, setAppliedQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("price");
   const [descending, setDescending] = useState(true);
   const [filtering, setFiltering] = useState(false);
@@ -65,20 +174,44 @@ export function MarketDashboard({ initialSummary, initialProperties, connected }
 
   const sortedProperties = useMemo(() => [...properties].sort((a, b) => (a[sort] - b[sort]) * (descending ? -1 : 1)), [properties, sort, descending]);
   const maxSegmentPrice = Math.max(...summary.segments.map((item) => item.averagePrice), 1);
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+  const exportQuery = appliedQuery ? `?${appliedQuery}` : "";
 
-  async function applyFilters() {
-    setFiltering(true); setError("");
+  async function loadFilteredMarket(nextFilters: FilterState) {
     const params = new URLSearchParams();
-    if (bedrooms !== "all") params.set("bedrooms", bedrooms);
-    if (minimumPrice) params.set("minPrice", minimumPrice);
+    Object.entries(nextFilters).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+    setFiltering(true); setError("");
     try {
       const [summaryResponse, propertiesResponse] = await Promise.all([
         fetch(`/api/market/summary?${params}`), fetch(`/api/market/properties?${params}`),
       ]);
       if (!summaryResponse.ok || !propertiesResponse.ok) throw new Error("Market filters could not be applied");
       setSummary(await summaryResponse.json()); setProperties(await propertiesResponse.json());
+      setAppliedQuery(params.toString());
     } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "Market service unavailable"); }
     finally { setFiltering(false); }
+  }
+
+  function applyFilters() {
+    const invalidRange = rangePairs.find(([minimum, maximum]) => (
+      filters[minimum] && filters[maximum] && Number(filters[minimum]) > Number(filters[maximum])
+    ));
+    if (invalidRange) {
+      setError(`Minimum ${invalidRange[2]} cannot be greater than maximum ${invalidRange[2]}.`);
+      return;
+    }
+    void loadFilteredMarket(filters);
+  }
+
+  function resetFilters() {
+    setFilters(emptyFilters);
+    void loadFilteredMarket(emptyFilters);
+  }
+
+  function updateFilter(key: FilterKey, value: string) {
+    setFilters((current) => ({ ...current, [key]: value }));
   }
 
   async function runScenario() {
@@ -135,13 +268,58 @@ export function MarketDashboard({ initialSummary, initialProperties, connected }
       <section className="card mt-6 overflow-hidden">
         <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
           <div><div className="flex items-center gap-2"><SlidersHorizontal size={17} className="text-emerald-700" /><h2 className="text-lg font-extrabold">Property records</h2></div><p className="mt-1 text-xs text-slate-500">Filter, sort, and export the underlying market data.</p></div>
-          <div className="flex flex-wrap gap-2"><a href="/api/market/export/csv" className="secondary-button"><ArrowDownToLine size={15} /> CSV</a><a href="/api/market/export/pdf" className="secondary-button"><FileText size={15} /> PDF</a></div>
+          <div className="flex flex-wrap gap-2"><a href={`/api/market/export/csv${exportQuery}`} className="secondary-button"><ArrowDownToLine size={15} /> CSV</a><a href={`/api/market/export/pdf${exportQuery}`} className="secondary-button"><FileText size={15} /> PDF</a></div>
         </div>
-        <div className="grid gap-3 border-b border-slate-100 bg-slate-50/70 p-4 sm:grid-cols-[1fr_1fr_auto] sm:px-6">
-          <label><span className="sr-only">Bedrooms</span><select className="field-input" value={bedrooms} onChange={(event) => setBedrooms(event.target.value)}><option value="all">All bedrooms</option><option value="2">2 bedrooms</option><option value="3">3 bedrooms</option><option value="4">4 bedrooms</option></select></label>
-          <label><span className="sr-only">Minimum price</span><input className="field-input" type="number" min="0" placeholder="Minimum price" value={minimumPrice} onChange={(event) => setMinimumPrice(event.target.value)} /></label>
-          <button className="primary-button" onClick={applyFilters} disabled={filtering}>{filtering ? <LoaderCircle className="animate-spin" size={15} /> : "Apply filters"}</button>
-        </div>
+        <form
+          className="border-b border-slate-200 bg-slate-50/70 p-4 sm:p-6"
+          onSubmit={(event) => { event.preventDefault(); applyFilters(); }}
+        >
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900">Refine property records</h3>
+              <p className="mt-1 text-xs text-slate-500">Combine any criteria below. Ranges include their boundary values.</p>
+            </div>
+            <span className={`w-fit rounded-full px-3 py-1 text-xs font-bold ${activeFilterCount ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"}`}>
+              {activeFilterCount} active {activeFilterCount === 1 ? "filter" : "filters"}
+            </span>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {filterGroups.map((group) => (
+              <fieldset key={group.title} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <legend className="sr-only">{group.title}</legend>
+                <h4 className="text-xs font-extrabold uppercase tracking-[0.1em] text-emerald-800">{group.title}</h4>
+                <p className="mt-1 min-h-8 text-[11px] leading-4 text-slate-500">{group.description}</p>
+                <div className="mt-3 grid grid-cols-2 gap-2.5">
+                  {group.fields.map((field) => (
+                    <label key={field.key} className={group.fields.length === 3 && field.key === "id" ? "col-span-2" : ""}>
+                      <span className="mb-1.5 block text-[11px] font-bold text-slate-600">{field.label}</span>
+                      <input
+                        className="field-input px-3 py-2.5"
+                        type="number"
+                        inputMode="decimal"
+                        min={field.min}
+                        max={field.max}
+                        step={field.step}
+                        placeholder={field.placeholder}
+                        value={filters[field.key]}
+                        onChange={(event) => updateFilter(field.key, event.target.value)}
+                      />
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            ))}
+          </div>
+          <div className="mt-4 flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-end">
+            <button type="button" className="secondary-button" onClick={resetFilters} disabled={filtering || (!activeFilterCount && !appliedQuery)}>
+              <RotateCcw size={15} /> Reset all
+            </button>
+            <button type="submit" className="primary-button" disabled={filtering}>
+              {filtering ? <LoaderCircle className="animate-spin" size={15} /> : <SlidersHorizontal size={15} />}
+              {filtering ? "Applying…" : "Apply filters"}
+            </button>
+          </div>
+        </form>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1120px] text-left text-sm">
             <thead className="bg-white text-[11px] uppercase tracking-[0.1em] text-slate-500">

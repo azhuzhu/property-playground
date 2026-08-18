@@ -1,5 +1,6 @@
 package com.propertyplayground.market.service;
 
+import com.propertyplayground.market.model.MarketFilters;
 import com.propertyplayground.market.model.MarketSummary;
 import com.propertyplayground.market.model.PropertyRecord;
 import jakarta.annotation.PostConstruct;
@@ -10,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
@@ -45,19 +45,35 @@ public class MarketDataService {
     }
 
     @Cacheable("property-lists")
-    public List<PropertyRecord> filter(Optional<Integer> bedrooms, Optional<Double> minPrice,
-            Optional<Double> maxPrice) {
+    public List<PropertyRecord> filter(MarketFilters filters) {
         return properties.stream()
-                .filter(item -> bedrooms.isEmpty() || item.bedrooms() == bedrooms.get())
-                .filter(item -> minPrice.isEmpty() || item.price() >= minPrice.get())
-                .filter(item -> maxPrice.isEmpty() || item.price() <= maxPrice.get())
+                .filter(item -> filters.id() == null || item.id() == filters.id())
+                .filter(item -> filters.bedrooms() == null || item.bedrooms() == filters.bedrooms())
+                .filter(item -> filters.bathrooms() == null || item.bathrooms() == filters.bathrooms())
+                .filter(item -> filters.minPrice() == null || item.price() >= filters.minPrice())
+                .filter(item -> filters.maxPrice() == null || item.price() <= filters.maxPrice())
+                .filter(item -> filters.minSquareFootage() == null
+                        || item.squareFootage() >= filters.minSquareFootage())
+                .filter(item -> filters.maxSquareFootage() == null
+                        || item.squareFootage() <= filters.maxSquareFootage())
+                .filter(item -> filters.minLotSize() == null || item.lotSize() >= filters.minLotSize())
+                .filter(item -> filters.maxLotSize() == null || item.lotSize() <= filters.maxLotSize())
+                .filter(item -> filters.minYearBuilt() == null || item.yearBuilt() >= filters.minYearBuilt())
+                .filter(item -> filters.maxYearBuilt() == null || item.yearBuilt() <= filters.maxYearBuilt())
+                .filter(item -> filters.minSchoolRating() == null
+                        || item.schoolRating() >= filters.minSchoolRating())
+                .filter(item -> filters.maxSchoolRating() == null
+                        || item.schoolRating() <= filters.maxSchoolRating())
+                .filter(item -> filters.minDistance() == null
+                        || item.distanceToCityCenter() >= filters.minDistance())
+                .filter(item -> filters.maxDistance() == null
+                        || item.distanceToCityCenter() <= filters.maxDistance())
                 .toList();
     }
 
     @Cacheable("market-summaries")
-    public MarketSummary summarize(Optional<Integer> bedrooms, Optional<Double> minPrice,
-            Optional<Double> maxPrice) {
-        List<PropertyRecord> filtered = filter(bedrooms, minPrice, maxPrice);
+    public MarketSummary summarize(MarketFilters filters) {
+        List<PropertyRecord> filtered = filter(filters);
         if (filtered.isEmpty()) {
             return new MarketSummary(0, 0, 0, 0, 0, 0, List.of());
         }
