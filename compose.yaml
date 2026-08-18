@@ -1,0 +1,52 @@
+name: property-playground
+
+services:
+  model-api:
+    build:
+      context: .
+      dockerfile: services/model-api/Dockerfile
+    image: property-playground/model-api:local
+    ports:
+      - "8002:8000"
+
+  estimator-api:
+    build:
+      context: .
+      dockerfile: services/estimator-api/Dockerfile
+    image: property-playground/estimator-api:local
+    environment:
+      MODEL_API_URL: http://model-api:8000
+    depends_on:
+      model-api:
+        condition: service_healthy
+    ports:
+      - "8001:8001"
+
+  market-api:
+    build:
+      context: .
+      dockerfile: services/market-api/Dockerfile
+    image: property-playground/market-api:local
+    environment:
+      MODEL_API_URL: http://model-api:8000
+      DATASET_PATH: /app/data/housing.csv
+    depends_on:
+      model-api:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+
+  portal:
+    build:
+      context: portal
+    image: property-playground/portal:local
+    environment:
+      PYTHON_API_URL: http://estimator-api:8001
+      JAVA_API_URL: http://market-api:8080
+    depends_on:
+      estimator-api:
+        condition: service_healthy
+      market-api:
+        condition: service_healthy
+    ports:
+      - "3000:3000"

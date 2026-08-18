@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+.DS_Store
+services/model-api/housing_model/model/*.joblib
+portal/node_modules/
+portal/.next/
+services/market-api/target/
