@@ -1,15 +1,54 @@
 "use client";
 
-import { ArrowDownToLine, ArrowUpDown, BarChart3, FileText, LoaderCircle, SlidersHorizontal, WandSparkles } from "lucide-react";
+import { ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpDown, BarChart3, FileText, LoaderCircle, SlidersHorizontal, WandSparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { currency, number } from "@/lib/format";
 import type { MarketSummary, Property, PropertyInput } from "@/lib/types";
 import type { PredictionResponse } from "@/lib/generated/openapi/models/PredictionResponse";
 
 type Props = { initialSummary: MarketSummary; initialProperties: Property[]; connected: boolean };
-type SortKey = "price" | "square_footage" | "school_rating" | "distance_to_city_center";
+type SortKey =
+  | "price"
+  | "square_footage"
+  | "lot_size"
+  | "bedrooms"
+  | "bathrooms"
+  | "year_built"
+  | "school_rating"
+  | "distance_to_city_center";
 
 const scenarioDefaults: PropertyInput = { square_footage: 1700, bedrooms: 3, bathrooms: 2, year_built: 2000, lot_size: 7200, distance_to_city_center: 5, school_rating: 8 };
+
+const propertyColumns: Array<{
+  key: SortKey;
+  label: string;
+  format: (property: Property) => string;
+}> = [
+  { key: "price", label: "Price", format: (property) => currency.format(property.price) },
+  {
+    key: "square_footage",
+    label: "Living area",
+    format: (property) => `${number.format(property.square_footage)} ft²`,
+  },
+  {
+    key: "lot_size",
+    label: "Lot size",
+    format: (property) => `${number.format(property.lot_size)} ft²`,
+  },
+  { key: "bedrooms", label: "Beds", format: (property) => number.format(property.bedrooms) },
+  { key: "bathrooms", label: "Baths", format: (property) => number.format(property.bathrooms) },
+  { key: "year_built", label: "Year built", format: (property) => String(property.year_built) },
+  {
+    key: "school_rating",
+    label: "School",
+    format: (property) => `${property.school_rating}/10`,
+  },
+  {
+    key: "distance_to_city_center",
+    label: "Distance",
+    format: (property) => `${property.distance_to_city_center} mi`,
+  },
+];
 
 export function MarketDashboard({ initialSummary, initialProperties, connected }: Props) {
   const [properties, setProperties] = useState(initialProperties);
@@ -104,9 +143,53 @@ export function MarketDashboard({ initialSummary, initialProperties, connected }
           <button className="primary-button" onClick={applyFilters} disabled={filtering}>{filtering ? <LoaderCircle className="animate-spin" size={15} /> : "Apply filters"}</button>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[780px] text-left text-sm">
-            <thead className="bg-white text-[11px] uppercase tracking-[0.1em] text-slate-500"><tr><th className="px-6 py-4">ID</th>{([['square_footage', 'Living area'], ['price', 'Price'], ['school_rating', 'School'], ['distance_to_city_center', 'Distance']] as [SortKey, string][]).map(([key, label]) => <th key={key} className="px-4 py-4"><button className="flex items-center gap-1 font-bold" onClick={() => changeSort(key)}>{label}<ArrowUpDown size={12} /></button></th>)}<th className="px-4 py-4">Bed / bath</th></tr></thead>
-            <tbody className="divide-y divide-slate-100">{sortedProperties.map((property) => <tr key={property.id} className="transition hover:bg-emerald-50/50"><td className="px-6 py-4 text-slate-400">#{property.id}</td><td className="px-4 py-4 font-bold">{number.format(property.square_footage)} ft²</td><td className="px-4 py-4 font-extrabold text-emerald-700">{currency.format(property.price)}</td><td className="px-4 py-4">{property.school_rating}/10</td><td className="px-4 py-4">{property.distance_to_city_center} mi</td><td className="px-4 py-4">{property.bedrooms} / {property.bathrooms}</td></tr>)}</tbody>
+          <table className="w-full min-w-[1120px] text-left text-sm">
+            <thead className="bg-white text-[11px] uppercase tracking-[0.1em] text-slate-500">
+              <tr>
+                <th className="px-6 py-4">ID</th>
+                {propertyColumns.map((column) => {
+                  const active = column.key === sort;
+                  const SortIcon = active ? (descending ? ArrowDown : ArrowUp) : ArrowUpDown;
+                  return (
+                    <th
+                      key={column.key}
+                      className="px-4 py-4"
+                      aria-sort={active ? (descending ? "descending" : "ascending") : undefined}
+                    >
+                      <button
+                        className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1 font-bold transition ${
+                          active
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                        }`}
+                        onClick={() => changeSort(column.key)}
+                        aria-pressed={active}
+                      >
+                        {column.label}
+                        <SortIcon size={13} strokeWidth={active ? 3 : 2} aria-hidden="true" />
+                      </button>
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {sortedProperties.map((property) => (
+                <tr key={property.id} className="transition hover:bg-emerald-50/50">
+                  <td className="px-6 py-4 text-slate-400">#{property.id}</td>
+                  {propertyColumns.map((column) => (
+                    <td
+                      key={column.key}
+                      className={`whitespace-nowrap px-4 py-4 ${
+                        column.key === "price" ? "font-extrabold text-emerald-700" : "font-medium"
+                      }`}
+                    >
+                      {column.format(property)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
           </table>
           {sortedProperties.length === 0 && <p className="py-12 text-center text-sm text-slate-500">No properties match these filters.</p>}
         </div>
