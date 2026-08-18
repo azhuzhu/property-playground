@@ -5,8 +5,10 @@ A containerised FastAPI service that trains a scikit-learn linear regression mod
 The synthetic dataset is interpreted as a generic U.S. suburban housing market. Prices and
 predictions use U.S. dollars (USD), areas use square feet, and distance uses miles.
 
-The cross-service housing payloads are defined once in `contracts/housing.schema.json`.
-Run `make contracts` after changing that schema; `make contracts-check` verifies that the generated
+The cross-service API is defined contract-first in `contracts/openapi.yaml`. `make contracts` runs the
+pinned OpenAPI Generator image with Podman (or Docker via `CONTAINER_CLIENT=docker`) to produce the
+Python/Pydantic, Java/Spring, and TypeScript/Fetch models consumed by each application.
+Run `make contracts` after changing that contract; `make contracts-check` verifies that the generated
 Pydantic, TypeScript, and Java bindings are current.
 
 Convert any CSV file to a typed JSON array with the pinned `csv2json` CLI:

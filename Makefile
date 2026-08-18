@@ -1,4 +1,5 @@
 CONTAINER_CLIENT ?= podman
+OPENAPI_GENERATOR_IMAGE ?= docker.io/openapitools/openapi-generator-cli:v7.14.0
 CSV2JSON_VERSION ?= 2.0.2
 CSV_INPUT ?= data/House Price Dataset.csv
 JSON_OUTPUT ?= $(CSV_INPUT:.csv=.json)
@@ -13,10 +14,10 @@ endif
 .PHONY: contracts contracts-check csv-to-json install train run test lint portal-install portal-build java-test container-build container-run stack-build stack-up stack-down
 
 contracts:
-	python3 scripts/generate_contracts.py
+	CONTAINER_CLIENT=$(CONTAINER_CLIENT) OPENAPI_GENERATOR_IMAGE=$(OPENAPI_GENERATOR_IMAGE) python3 scripts/generate_contracts.py
 
 contracts-check:
-	python3 scripts/generate_contracts.py --check
+	CONTAINER_CLIENT=$(CONTAINER_CLIENT) OPENAPI_GENERATOR_IMAGE=$(OPENAPI_GENERATOR_IMAGE) python3 scripts/generate_contracts.py --check
 
 csv-to-json:
 	npx --yes csv2json@$(CSV2JSON_VERSION) --dynamic-typing "$(CSV_INPUT)" "$(JSON_OUTPUT)"
@@ -34,7 +35,7 @@ test:
 	python3 -m pytest -q
 
 lint:
-	python3 scripts/generate_contracts.py --check
+	CONTAINER_CLIENT=$(CONTAINER_CLIENT) OPENAPI_GENERATOR_IMAGE=$(OPENAPI_GENERATOR_IMAGE) python3 scripts/generate_contracts.py --check
 	python3 -m ruff check .
 	PYTHONPATH=contracts/generated/python python3 -m pylint scripts/generate_contracts.py services/model-api/housing_model services/model-api/scripts services/model-api/tests services/estimator-api/estimator_app services/estimator-api/tests
 

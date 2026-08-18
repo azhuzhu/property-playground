@@ -1,4 +1,4 @@
-import type { HousingFeatures } from "@/lib/generated/contracts";
+import type { HousingFeatures } from "@/lib/generated/openapi/models/HousingFeatures";
 
 export type PropertyInput = HousingFeatures;
 

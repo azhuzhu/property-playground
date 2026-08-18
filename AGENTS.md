@@ -11,9 +11,10 @@ The synthetic dataset represents a generic U.S. suburban housing market. Treat e
 model prediction, aggregate, chart value, and export as U.S. dollars (USD). Areas use square feet and
 distance uses miles; do not present the data as belonging to a specific city.
 
-Cross-service housing request and prediction shapes are owned by `contracts/housing.schema.json`.
-Do not edit generated Python, TypeScript, or Java contract files directly. Run `make contracts` after
-schema changes and keep `make contracts-check` passing.
+Cross-service API shapes are owned by the OpenAPI 3 contract in `contracts/openapi.yaml`. The pinned
+OpenAPI Generator container produces Python/Pydantic, Java/Spring, and TypeScript/Fetch models. Do not
+edit generated model files directly. Run `make contracts` after contract changes and keep
+`make contracts-check` passing. Set `CONTAINER_CLIENT=docker` to generate with Docker instead.
 
 Use descriptive service package names. The original generic root `app/` package was deliberately renamed and moved into `services/model-api/housing_model/`.
 

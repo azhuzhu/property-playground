@@ -1,0 +1,255 @@
+openapi: 3.0.3
+info:
+  title: Property Playground Model API
+  description: >-
+    Canonical contract for housing feature validation and price prediction across
+    the Python services, Java market API, and Next.js portal.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Local model API
+paths:
+  /predict:
+    post:
+      operationId: predict
+      summary: Predict one or more housing prices
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/HousingFeatures"
+                - type: array
+                  minItems: 1
+                  items:
+                    $ref: "#/components/schemas/HousingFeatures"
+            examples:
+              single:
+                summary: One property
+                value:
+                  square_footage: 1550
+                  bedrooms: 3
+                  bathrooms: 2
+                  year_built: 1997
+                  lot_size: 6800
+                  distance_to_city_center: 4.1
+                  school_rating: 7.6
+              batch:
+                summary: Multiple properties
+                value:
+                  - square_footage: 1550
+                    bedrooms: 3
+                    bathrooms: 2
+                    year_built: 1997
+                    lot_size: 6800
+                    distance_to_city_center: 4.1
+                    school_rating: 7.6
+                  - square_footage: 2200
+                    bedrooms: 4
+                    bathrooms: 2.5
+                    year_built: 2008
+                    lot_size: 9600
+                    distance_to_city_center: 7
+                    school_rating: 8.8
+      responses:
+        "200":
+          description: Successful prediction
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/PredictionResponse"
+                  - $ref: "#/components/schemas/BatchPrediction"
+        "422":
+          description: Invalid housing features
+  /model-info:
+    get:
+      operationId: getModelInfo
+      summary: Show model metadata and quality metrics
+      responses:
+        "200":
+          description: Model metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelInfo"
+  /health:
+    get:
+      operationId: getHealth
+      summary: Check service health
+      responses:
+        "200":
+          description: Healthy service
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "503":
+          description: Model is not loaded
+components:
+  schemas:
+    HousingFeatures:
+      type: object
+      additionalProperties: false
+      required:
+        - square_footage
+        - bedrooms
+        - bathrooms
+        - year_built
+        - lot_size
+        - distance_to_city_center
+        - school_rating
+      properties:
+        square_footage:
+          type: number
+          format: double
+          exclusiveMinimum: true
+          minimum: 0
+          example: 1550
+        bedrooms:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 20
+          example: 3
+        bathrooms:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 20
+          example: 2
+        year_built:
+          type: integer
+          format: int32
+          minimum: 1700
+          maximum: 2200
+          example: 1997
+        lot_size:
+          type: number
+          format: double
+          exclusiveMinimum: true
+          minimum: 0
+          example: 6800
+        distance_to_city_center:
+          type: number
+          format: double
+          minimum: 0
+          example: 4.1
+        school_rating:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 10
+          example: 7.6
+    PredictionResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - prediction
+      properties:
+        prediction:
+          type: number
+          format: double
+          description: Predicted sale price in U.S. dollars (USD).
+    BatchPrediction:
+      type: object
+      additionalProperties: false
+      required:
+        - predictions
+      properties:
+        predictions:
+          type: array
+          items:
+            type: number
+            format: double
+    EstimateResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - prediction
+        - model
+      properties:
+        prediction:
+          type: number
+          format: double
+          description: Predicted sale price in U.S. dollars (USD).
+        model:
+          type: string
+          enum:
+            - housing-price-regression
+          default: housing-price-regression
+    ModelMetrics:
+      type: object
+      additionalProperties: false
+      required:
+        - r2
+        - mae
+        - rmse
+        - training_samples
+        - test_samples
+      properties:
+        r2:
+          type: number
+          format: double
+        mae:
+          type: number
+          format: double
+        rmse:
+          type: number
+          format: double
+        training_samples:
+          type: integer
+          format: int32
+        test_samples:
+          type: integer
+          format: int32
+    ModelInfo:
+      type: object
+      additionalProperties: false
+      required:
+        - model_type
+        - model_version
+        - feature_names
+        - coefficients
+        - intercept
+        - metrics
+        - training_source
+        - currency
+      properties:
+        model_type:
+          type: string
+        model_version:
+          type: string
+        feature_names:
+          type: array
+          items:
+            type: string
+        coefficients:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+        intercept:
+          type: number
+          format: double
+        metrics:
+          $ref: "#/components/schemas/ModelMetrics"
+        training_source:
+          type: string
+        currency:
+          type: string
+          enum:
+            - USD
+          default: USD
+    HealthResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+        - model_loaded
+      properties:
+        status:
+          type: string
+        model_loaded:
+          type: boolean

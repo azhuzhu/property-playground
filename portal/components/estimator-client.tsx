@@ -5,7 +5,7 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { currency, number } from "@/lib/format";
 import { useEstimateHistory } from "@/hooks/use-estimate-history";
-import type { EstimateResponse } from "@/lib/generated/contracts";
+import type { EstimateResponse } from "@/lib/generated/openapi/models/EstimateResponse";
 import type { PropertyInput } from "@/lib/types";
 
 const initialValues: PropertyInput = {

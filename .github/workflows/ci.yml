@@ -13,6 +13,10 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+      - name: Install Podman
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes podman
       - run: pip install -r services/model-api/requirements-dev.txt
       - run: make lint
       - run: make test
@@ -32,8 +36,4 @@ jobs:
           cache: maven
       - run: mvn test -B
         working-directory: services/market-api
-      - name: Install Podman
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes podman
       - run: podman build --format docker -f services/model-api/Dockerfile -t property-playground-model-api .

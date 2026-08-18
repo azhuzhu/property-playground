@@ -34,7 +34,10 @@ async def create_estimate(payload: HousingFeatures) -> EstimateResponse:
         raise HTTPException(status_code=422, detail="The model rejected the supplied property data")
     if response.is_error:
         raise HTTPException(status_code=502, detail="Prediction model returned an error")
-    return EstimateResponse(prediction=response.json()["prediction"])
+    return EstimateResponse(
+        prediction=response.json()["prediction"],
+        model="housing-price-regression",
+    )
 
 
 @app.get("/health", response_model=HealthResponse)

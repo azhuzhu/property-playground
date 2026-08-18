@@ -1,5 +1,21 @@
-"""Shared Property Playground API contracts."""
+"""Public imports for models generated from the canonical OpenAPI contract."""
 
-from .models import EstimateResponse, HousingFeatures, PredictionResponse
+from .models import (
+    BatchPrediction,
+    EstimateResponse,
+    HealthResponse,
+    HousingFeatures,
+    ModelInfo,
+    ModelMetrics,
+    PredictionResponse,
+)
 
-__all__ = ["EstimateResponse", "HousingFeatures", "PredictionResponse"]
+__all__ = [
+    "BatchPrediction",
+    "EstimateResponse",
+    "HealthResponse",
+    "HousingFeatures",
+    "ModelInfo",
+    "ModelMetrics",
+    "PredictionResponse",
+]

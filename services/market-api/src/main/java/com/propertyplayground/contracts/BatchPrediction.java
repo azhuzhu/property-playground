@@ -4,11 +4,11 @@ import java.net.URI;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import org.springframework.lang.Nullable;
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.springframework.lang.Nullable;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import java.time.OffsetDateTime;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -19,43 +19,52 @@ import java.util.*;
 import jakarta.annotation.Generated;
 
 /**
- * PredictionResponse
+ * BatchPrediction
  */
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.14.0")
-public class PredictionResponse implements Predict200Response {
+public class BatchPrediction implements Predict200Response {
 
-  private Double prediction;
+  @Valid
+  private List<Double> predictions = new ArrayList<>();
 
-  public PredictionResponse() {
+  public BatchPrediction() {
     super();
   }
 
   /**
    * Constructor with only required parameters
    */
-  public PredictionResponse(Double prediction) {
-    this.prediction = prediction;
+  public BatchPrediction(List<Double> predictions) {
+    this.predictions = predictions;
   }
 
-  public PredictionResponse prediction(Double prediction) {
-    this.prediction = prediction;
+  public BatchPrediction predictions(List<Double> predictions) {
+    this.predictions = predictions;
+    return this;
+  }
+
+  public BatchPrediction addPredictionsItem(Double predictionsItem) {
+    if (this.predictions == null) {
+      this.predictions = new ArrayList<>();
+    }
+    this.predictions.add(predictionsItem);
     return this;
   }
 
   /**
-   * Predicted sale price in U.S. dollars (USD).
-   * @return prediction
+   * Get predictions
+   * @return predictions
    */
   @NotNull
-  @Schema(name = "prediction", description = "Predicted sale price in U.S. dollars (USD).", requiredMode = Schema.RequiredMode.REQUIRED)
-  @JsonProperty("prediction")
-  public Double getPrediction() {
-    return prediction;
+  @Schema(name = "predictions", requiredMode = Schema.RequiredMode.REQUIRED)
+  @JsonProperty("predictions")
+  public List<Double> getPredictions() {
+    return predictions;
   }
 
-  public void setPrediction(Double prediction) {
-    this.prediction = prediction;
+  public void setPredictions(List<Double> predictions) {
+    this.predictions = predictions;
   }
 
   @Override
@@ -66,20 +75,20 @@ public class PredictionResponse implements Predict200Response {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    PredictionResponse predictionResponse = (PredictionResponse) o;
-    return Objects.equals(this.prediction, predictionResponse.prediction);
+    BatchPrediction batchPrediction = (BatchPrediction) o;
+    return Objects.equals(this.predictions, batchPrediction.predictions);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(prediction);
+    return Objects.hash(predictions);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class PredictionResponse {\n");
-    sb.append("    prediction: ").append(toIndentedString(prediction)).append("\n");
+    sb.append("class BatchPrediction {\n");
+    sb.append("    predictions: ").append(toIndentedString(predictions)).append("\n");
     sb.append("}");
     return sb.toString();
   }

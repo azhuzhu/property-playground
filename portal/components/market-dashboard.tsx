@@ -4,7 +4,7 @@ import { ArrowDownToLine, ArrowUpDown, BarChart3, FileText, LoaderCircle, Slider
 import { useMemo, useState } from "react";
 import { currency, number } from "@/lib/format";
 import type { MarketSummary, Property, PropertyInput } from "@/lib/types";
-import type { PredictionResponse } from "@/lib/generated/contracts";
+import type { PredictionResponse } from "@/lib/generated/openapi/models/PredictionResponse";
 
 type Props = { initialSummary: MarketSummary; initialProperties: Property[]; connected: boolean };
 type SortKey = "price" | "square_footage" | "school_rating" | "distance_to_city_center";
