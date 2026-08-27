@@ -7,4 +7,5 @@ __pycache__/
 services/model-api/housing_model/model/*.joblib
 portal/node_modules/
 portal/.next/
+portal/*.tsbuildinfo
 services/market-api/target/
