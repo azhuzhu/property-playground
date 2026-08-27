@@ -74,10 +74,16 @@ TARGETS = (
 def generate(target: GenerationTarget, temporary_root: Path) -> None:
     """Run the official generator for one language."""
     relative_output = temporary_root.relative_to(ROOT) / target.language.lower()
+    user_arguments = (
+        []
+        if Path(CONTAINER_CLIENT).name == "podman"
+        else ["--user", f"{os.getuid()}:{os.getgid()}"]
+    )
     command = [
         CONTAINER_CLIENT,
         "run",
         "--rm",
+        *user_arguments,
         "-v",
         f"{ROOT}:/local",
         GENERATOR_IMAGE,
