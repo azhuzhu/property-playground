@@ -25,6 +25,8 @@ public class HealthResponse {
 
   private Boolean modelLoaded;
 
+  private Double uptime;
+
   public HealthResponse() {
     super();
   }
@@ -32,9 +34,10 @@ public class HealthResponse {
   /**
    * Constructor with only required parameters
    */
-  public HealthResponse(String status, Boolean modelLoaded) {
+  public HealthResponse(String status, Boolean modelLoaded, Double uptime) {
     this.status = status;
     this.modelLoaded = modelLoaded;
+    this.uptime = uptime;
   }
 
   public HealthResponse status(String status) {
@@ -77,6 +80,26 @@ public class HealthResponse {
     this.modelLoaded = modelLoaded;
   }
 
+  public HealthResponse uptime(Double uptime) {
+    this.uptime = uptime;
+    return this;
+  }
+
+  /**
+   * Get uptime
+   * @return uptime
+   */
+  @NotNull
+  @Schema(name = "uptime", requiredMode = Schema.RequiredMode.REQUIRED)
+  @JsonProperty("uptime")
+  public Double getUptime() {
+    return uptime;
+  }
+
+  public void setUptime(Double uptime) {
+    this.uptime = uptime;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -87,12 +110,13 @@ public class HealthResponse {
     }
     HealthResponse healthResponse = (HealthResponse) o;
     return Objects.equals(this.status, healthResponse.status) &&
-        Objects.equals(this.modelLoaded, healthResponse.modelLoaded);
+        Objects.equals(this.modelLoaded, healthResponse.modelLoaded) &&
+        Objects.equals(this.uptime, healthResponse.uptime);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(status, modelLoaded);
+    return Objects.hash(status, modelLoaded, uptime);
   }
 
   @Override
@@ -101,6 +125,7 @@ public class HealthResponse {
     sb.append("class HealthResponse {\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    modelLoaded: ").append(toIndentedString(modelLoaded)).append("\n");
+    sb.append("    uptime: ").append(toIndentedString(uptime)).append("\n");
     sb.append("}");
     return sb.toString();
   }

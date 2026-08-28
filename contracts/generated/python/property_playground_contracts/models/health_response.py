@@ -17,8 +17,8 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
-from typing import Any, ClassVar, Dict, List
+from pydantic import BaseModel, ConfigDict, StrictBool, StrictFloat, StrictInt, StrictStr
+from typing import Any, ClassVar, Dict, List, Union
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -28,7 +28,8 @@ class HealthResponse(BaseModel):
     """ # noqa: E501
     status: StrictStr
     model_loaded: StrictBool
-    __properties: ClassVar[List[str]] = ["status", "model_loaded"]
+    uptime: Union[StrictFloat, StrictInt]
+    __properties: ClassVar[List[str]] = ["status", "model_loaded", "uptime"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -82,6 +83,7 @@ class HealthResponse(BaseModel):
 
         _obj = cls.model_validate({
             "status": obj.get("status"),
-            "model_loaded": obj.get("model_loaded")
+            "model_loaded": obj.get("model_loaded"),
+            "uptime": obj.get("uptime")
         })
         return _obj

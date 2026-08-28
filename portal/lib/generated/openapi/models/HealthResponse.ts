@@ -31,6 +31,12 @@ export interface HealthResponse {
      * @memberof HealthResponse
      */
     model_loaded: boolean;
+    /**
+     *
+     * @type {number}
+     * @memberof HealthResponse
+     */
+    uptime: number;
 }
 
 /**
@@ -39,6 +45,7 @@ export interface HealthResponse {
 export function instanceOfHealthResponse(value: object): value is HealthResponse {
     if (!('status' in value) || value['status'] === undefined) return false;
     if (!('model_loaded' in value) || value['model_loaded'] === undefined) return false;
+    if (!('uptime' in value) || value['uptime'] === undefined) return false;
     return true;
 }
 
@@ -54,6 +61,7 @@ export function HealthResponseFromJSONTyped(json: any, ignoreDiscriminator: bool
 
         'status': json['status'],
         'model_loaded': json['model_loaded'],
+        'uptime': json['uptime'],
     };
 }
 
@@ -70,5 +78,6 @@ export function HealthResponseToJSONTyped(value?: HealthResponse | null, ignoreD
 
         'status': value['status'],
         'model_loaded': value['model_loaded'],
+        'uptime': value['uptime'],
     };
 }

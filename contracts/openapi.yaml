@@ -242,8 +242,12 @@ components:
       required:
         - status
         - model_loaded
+        - uptime
       properties:
         status:
           type: string
         model_loaded:
           type: boolean
+        uptime:
+          type: number
+          format: double

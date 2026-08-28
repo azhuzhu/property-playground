@@ -4,6 +4,7 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated
+import datetime
 
 import joblib
 import pandas as pd
@@ -22,6 +23,7 @@ from housing_model.schemas import (
 DEFAULT_MODEL_PATH = Path(__file__).parent / "model" / "housing_model.joblib"
 DEFAULT_DATASET_PATH = Path("data/House Price Dataset.csv")
 
+START_TIMESTAMP = datetime.datetime.now()
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
@@ -102,7 +104,8 @@ def predict(payload: PredictionInput, request: Request) -> PredictionResponse | 
     rows = payload if is_batch else [payload]
     if not rows:
         raise HTTPException(status_code=422, detail="At least one feature set is required")
-
+    if len(rows) >= 3:
+        raise HTTPException(status_code=501, detail="Only less than 3 inputs are allowed")
     frame = pd.DataFrame([row.model_dump() for row in rows], columns=FEATURE_NAMES)
     predictions = request.app.state.artifact["model"].predict(frame)
     values = [round(max(0.0, float(value)), 2) for value in predictions]
@@ -131,4 +134,5 @@ def health(request: Request) -> HealthResponse:
     loaded = getattr(request.app.state, "artifact", None) is not None
     if not loaded:
         raise HTTPException(status_code=503, detail="Model is not loaded")
-    return HealthResponse(status="healthy", model_loaded=True)
+    uptime = (datetime.datetime.now() - START_TIMESTAMP).total_seconds()
+    return HealthResponse(status="healthy", model_loaded=True, uptime=uptime)
