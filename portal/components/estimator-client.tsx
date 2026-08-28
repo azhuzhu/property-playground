@@ -156,21 +156,19 @@ export function EstimatorClient() {
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">Estimated market value · USD</p>
           <p className="mt-4 text-4xl font-black tracking-[-0.04em]">{result === null ? "—" : currency.format(result.prediction)}</p>
           <p className="mt-2 text-xs text-slate-400">Regression estimate · not a formal appraisal</p>
-          <div className="mt-7 border-t border-white/10 pt-5">
-            <div className="mb-2 flex justify-between text-xs text-slate-400"><span>Relative value</span><span>{result ? `${Math.round((result.prediction / 450000) * 100)}%` : "0%"}</span></div>
-            <div className="h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-emerald-400 transition-all duration-700" style={{ width: `${Math.min(100, result ? (result.prediction / 450000) * 100 : 0)}%` }} /></div>
-          </div>
           {result !== null && (
-            <table className="mt-6 w-full text-left text-xs">
-              <caption className="sr-only">Prediction results</caption>
-              <tbody className="divide-y divide-white/10">
-                <tr><th className="py-2 font-medium text-slate-400">Estimated value</th><td className="py-2 text-right font-bold">{currency.format(result.prediction)}</td></tr>
-                <tr><th className="py-2 font-medium text-slate-400">Price / sq ft</th><td className="py-2 text-right font-bold">{currency.format(result.prediction / result.square_footage)}</td></tr>
-                <tr><th className="py-2 font-medium text-slate-400">Living area</th><td className="py-2 text-right font-bold">{number.format(result.square_footage)} sq ft</td></tr>
-                <tr><th className="py-2 font-medium text-slate-400">Bedrooms / bathrooms</th><td className="py-2 text-right font-bold">{result.bedrooms} / {result.bathrooms}</td></tr>
-                <tr><th className="py-2 font-medium text-slate-400">School rating</th><td className="py-2 text-right font-bold">{result.school_rating}/10</td></tr>
-              </tbody>
-            </table>
+            <div className="mt-7 border-t border-white/10 pt-5">
+              <table className="w-full text-left text-xs">
+                <caption className="sr-only">Prediction results</caption>
+                <tbody className="divide-y divide-white/10">
+                  <tr><th className="py-2 font-medium text-slate-400">Estimated value</th><td className="py-2 text-right font-bold">{currency.format(result.prediction)}</td></tr>
+                  <tr><th className="py-2 font-medium text-slate-400">Price / sq ft</th><td className="py-2 text-right font-bold">{currency.format(result.prediction / result.square_footage)}</td></tr>
+                  <tr><th className="py-2 font-medium text-slate-400">Living area</th><td className="py-2 text-right font-bold">{number.format(result.square_footage)} sq ft</td></tr>
+                  <tr><th className="py-2 font-medium text-slate-400">Bedrooms / bathrooms</th><td className="py-2 text-right font-bold">{result.bedrooms} / {result.bathrooms}</td></tr>
+                  <tr><th className="py-2 font-medium text-slate-400">School rating</th><td className="py-2 text-right font-bold">{result.school_rating}/10</td></tr>
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
 
